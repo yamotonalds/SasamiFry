@@ -65,7 +65,7 @@ public class Home extends Activity {
             _twitter = new AsyncTwitterFactory().getInstance();
             _twitter.addListener(_listener);
             _twitter.setOAuthConsumer(getString(R.string.twitter_consumer_key), getString(R.string.twitter_consumer_secret));
-            _twitter.getOAuthRequestTokenAsync("twittercallback://callback");
+            _twitter.getOAuthRequestTokenAsync("sasamifry://twittercallback");
         }
     }
 
