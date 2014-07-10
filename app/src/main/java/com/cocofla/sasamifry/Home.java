@@ -37,11 +37,7 @@ public class Home extends Activity {
         @Override
         public void gotOAuthAccessToken(AccessToken token) {
             Log.d(TAG, "gotOAuthAccessToken");
-            SharedPreferences pref = getSharedPreferences(getString(R.string.user_twitter_account_info_key), MODE_PRIVATE);
-            SharedPreferences.Editor editor = pref.edit();
-            editor.putString(getString(R.string.access_token_key), token.getToken());
-            editor.putString(getString(R.string.access_token_secret_key), token.getTokenSecret());
-            editor.apply();
+            saveTwitterAccessToken(token);
         }
 
         @Override
@@ -57,21 +53,15 @@ public class Home extends Activity {
 
         Log.d(TAG, "onCreate");
 
-        SharedPreferences pref = getSharedPreferences(getString(R.string.user_twitter_account_info_key), MODE_PRIVATE);
-        String access_token = pref.getString(getString(R.string.access_token_key), null);
-        String access_token_secret = pref.getString(getString(R.string.access_token_secret_key), null);
-        if (access_token == null || access_token_secret == null) {
-            Log.d(TAG, "start twitter authentication");
-            _twitter = new AsyncTwitterFactory().getInstance();
-            _twitter.addListener(_listener);
-            _twitter.setOAuthConsumer(getString(R.string.twitter_consumer_key), getString(R.string.twitter_consumer_secret));
-            _twitter.getOAuthRequestTokenAsync("sasamifry://twittercallback");
+        AccessToken token = restoreTwitterAccessToken();
+        if (token == null) {
+            startTwitterAuth();
         }
     }
 
     @Override
     protected void onNewIntent(Intent intent) {
-        //ブラウザからのコールバックで呼ばれる
+        // ブラウザからのコールバックで呼ばれる
         final Uri uri = intent.getData();
         if (uri != null) {
             Log.d(TAG, "intent has uri");
@@ -107,5 +97,34 @@ public class Home extends Activity {
             return true;
         }
         return super.onOptionsItemSelected(item);
+    }
+
+    private void saveTwitterAccessToken(AccessToken token) {
+        SharedPreferences pref = getSharedPreferences(getString(R.string.user_twitter_account_info_key), MODE_PRIVATE);
+        SharedPreferences.Editor editor = pref.edit();
+        editor.putString(getString(R.string.access_token_key), token.getToken());
+        editor.putString(getString(R.string.access_token_secret_key), token.getTokenSecret());
+        editor.apply();
+    }
+
+    private AccessToken restoreTwitterAccessToken() {
+        SharedPreferences pref = getSharedPreferences(getString(R.string.user_twitter_account_info_key), MODE_PRIVATE);
+        String token = pref.getString(getString(R.string.access_token_key), null);
+        String tokenSecret = pref.getString(getString(R.string.access_token_secret_key), null);
+
+        AccessToken accessToken = null;
+        if (token != null && tokenSecret != null) {
+            accessToken = new AccessToken(token, tokenSecret);
+        }
+
+        return accessToken;
+    }
+
+    private void startTwitterAuth() {
+        Log.d(TAG, "start twitter authentication");
+        _twitter = new AsyncTwitterFactory().getInstance();
+        _twitter.addListener(_listener);
+        _twitter.setOAuthConsumer(getString(R.string.twitter_consumer_key), getString(R.string.twitter_consumer_secret));
+        _twitter.getOAuthRequestTokenAsync("sasamifry://twittercallback");
     }
 }
