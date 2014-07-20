@@ -1,6 +1,8 @@
 package com.cocofla.sasamifry;
 
 import android.app.Activity;
+import android.app.FragmentManager;
+import android.app.FragmentTransaction;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.net.Uri;
@@ -9,8 +11,13 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 
+import com.cocofla.sasamifry.timeline.TwitterContent;
+
 import twitter4j.AsyncTwitter;
 import twitter4j.AsyncTwitterFactory;
+import twitter4j.Paging;
+import twitter4j.ResponseList;
+import twitter4j.Status;
 import twitter4j.TwitterAdapter;
 import twitter4j.TwitterException;
 import twitter4j.TwitterListener;
@@ -19,8 +26,8 @@ import twitter4j.auth.AccessToken;
 import twitter4j.auth.RequestToken;
 
 
-public class Home extends Activity {
-    public static final String TAG = "Home";
+public class Home extends Activity implements StreamFragment.OnFragmentInteractionListener {
+    private static final String TAG = "Home";
     
     private AsyncTwitter _twitter;
     private RequestToken _reqToken;
@@ -45,6 +52,7 @@ public class Home extends Activity {
             Log.d(TAG, te.toString());
         }
     };
+    private StreamFragment streamFragment;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -52,6 +60,8 @@ public class Home extends Activity {
         setContentView(R.layout.activity_home);
 
         Log.d(TAG, "onCreate");
+
+        createStreams();
 
         AccessToken token = restoreTwitterAccessToken();
         if (token == null) {
@@ -95,6 +105,9 @@ public class Home extends Activity {
             editor.remove(getString(R.string.access_token_secret_key));
             editor.apply();
             return true;
+        } else if (id == R.id.action_reload) {
+            Log.d(TAG, "reload");
+            reloadTimeLine();
         }
         return super.onOptionsItemSelected(item);
     }
@@ -125,6 +138,42 @@ public class Home extends Activity {
         _twitter = new AsyncTwitterFactory().getInstance();
         _twitter.addListener(_listener);
         _twitter.setOAuthConsumer(getString(R.string.twitter_consumer_key), getString(R.string.twitter_consumer_secret));
-        _twitter.getOAuthRequestTokenAsync("sasamifry://twittercallback");
+        _twitter.getOAuthRequestTokenAsync("sasamifry://twitter-callback");
+    }
+
+    private void createStreams() {
+        FragmentManager fm = getFragmentManager();
+        FragmentTransaction ft = fm.beginTransaction();
+        this.streamFragment = StreamFragment.newInstance("1", "2");
+        ft.add(R.id.streams, this.streamFragment);
+        ft.commit();
+    }
+
+    @Override
+    public void onFragmentInteraction(Status status) {
+        Log.d(TAG, status.getText());
+    }
+
+    private void reloadTimeLine() {
+        AsyncTwitter twitter = new AsyncTwitterFactory().getInstance();
+        twitter.addListener(new TwitterAdapter() {
+            @Override
+            public void gotHomeTimeline(ResponseList<Status> statuses) {
+                for (Status status : statuses) {
+                    Log.d(TAG, status.getUser().getName() + "\n" + status.getUser().getScreenName() + "\n" + status.getText());
+                    TwitterContent.addItem(new TwitterContent.Tweet(status));
+                }
+                Log.d(TAG, "count:" + statuses.size());
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        streamFragment.notifyListUpdated();
+                    }
+                });
+            }
+        });
+        twitter.setOAuthConsumer(getString(R.string.twitter_consumer_key), getString(R.string.twitter_consumer_secret));
+        twitter.setOAuthAccessToken(restoreTwitterAccessToken());
+        twitter.getHomeTimeline(new Paging(1));
     }
 }

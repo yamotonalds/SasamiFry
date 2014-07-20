@@ -1,13 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <string name="app_name">SasamiFry</string>
-    <string name="hello_world">Hello world!!</string>
+    <string name="app_name">ささみフライ</string>
     <string name="action_settings">Settings</string>
+    <string name="action_reload">Reload</string>
     <string name="twitter_consumer_key">xzgUCA3398vx8ngIrnZ1u3b1V</string>
     <string name="twitter_consumer_secret">hsx8MaRjnlXfeFtbzpw6zS39r9flOvQDnaBqDhVJvEQ8xm5ipG</string>
     <string name="user_twitter_account_info_key">UserTwitterAccountInfo</string>
     <string name="access_token_key">AccessToken</string>
     <string name="access_token_secret_key">AccessTokenSecret</string>
+    <string name="timeline__empty_text">ツイートがありません</string>
 
 </resources>
